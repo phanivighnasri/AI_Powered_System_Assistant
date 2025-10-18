@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Diagnostic Assistant</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .system-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .info-box {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .info-box h3 {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .info-box p {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .input-section {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 120px;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            font-family: inherit;
+            resize: vertical;
+            transition: border-color 0.3s;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .commands-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.1em;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            font-weight: 600;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            display: none;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .result {
+            display: none;
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .result h2 {
+            color: #333;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .result-content {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            line-height: 1.8;
+            white-space: pre-wrap;
+            font-size: 0.95em;
+        }
+
+        .error {
+            background: #fee;
+            border-left: 4px solid #f44;
+            padding: 15px;
+            border-radius: 8px;
+            color: #c33;
+            display: none;
+            margin-top: 15px;
+        }
+
+        .success-icon {
+            color: #4caf50;
+            font-size: 1.5em;
+        }
+
+        .stats {
+            display: flex;
+            gap: 20px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        .stat {
+            background: white;
+            padding: 10px 15px;
+            border-radius: 6px;
+            font-size: 0.85em;
+            color: #666;
+        }
+
+        .stat strong {
+            color: #333;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.8em;
+            }
+            
+            .card {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🛠️ System Diagnostic Assistant</h1>
+            <p>AI-powered diagnostics that read your actual system state</p>
+        </div>
+
+        <div class="card">
+            <div id="systemInfo" class="system-info"></div>
+            
+            <div class="input-section">
+                <label for="problem">Describe Your Problem:</label>
+                <textarea 
+                    id="problem" 
+                    placeholder="Example: npm install fails with permission error&#10;Example: Python pip install not working&#10;Example: Docker container won't start&#10;Example: Git push fails with authentication error"
+                ></textarea>
+            </div>
+
+            <div class="input-section">
+                <label for="commands">Related Commands (comma-separated):</label>
+                <input 
+                    type="text" 
+                    id="commands" 
+                    class="commands-input"
+                    placeholder="python, pip, node, npm, git, docker"
+                    value="python, pip, node, npm, git"
+                >
+            </div>
+
+            <button id="diagnoseBtn" class="btn" onclick="diagnose()">
+                🔍 Diagnose Problem
+            </button>
+
+            <div id="loading" class="loading">
+                <div class="spinner"></div>
+                <p>Analyzing your system... This may take 10-30 seconds</p>
+            </div>
+
+            <div id="error" class="error"></div>
+
+            <div id="result" class="result">
+                <h2>
+                    <span class="success-icon">✅</span>
+                    Analysis Complete
+                </h2>
+                <div id="resultContent" class="result-content"></div>
+                <div class="stats" id="stats"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:5000';
+
+        // Load system info on page load
+        async function loadSystemInfo() {
+            try {
+                const response = await fetch(`${API_BASE}/api/system-info`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    const info = data.system;
+                    const resources = data.resources;
+                    
+                    document.getElementById('systemInfo').innerHTML = `
+                        <div class="info-box">
+                            <h3>Operating System</h3>
+                            <p>${info.os}</p>
+                        </div>
+                        <div class="info-box">
+                            <h3>Platform</h3>
+                            <p>${info.platform.split('-')[0]}</p>
+                        </div>
+                        <div class="info-box">
+                            <h3>CPU Usage</h3>
+                            <p>${resources.cpu_percent}%</p>
+                        </div>
+                        <div class="info-box">
+                            <h3>Memory Usage</h3>
+                            <p>${resources.memory_percent.toFixed(1)}%</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Failed to load system info:', error);
+            }
+        }
+
+        async function diagnose() {
+            const problem = document.getElementById('problem').value.trim();
+            const commandsStr = document.getElementById('commands').value.trim();
+            
+            if (!problem) {
+                showError('Please describe your problem');
+                return;
+            }
+
+            const commands = commandsStr.split(',').map(c => c.trim()).filter(c => c);
+
+            // Hide previous results and errors
+            document.getElementById('result').style.display = 'none';
+            document.getElementById('error').style.display = 'none';
+            
+            // Show loading
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('diagnoseBtn').disabled = true;
+
+            try {
+                const response = await fetch(`${API_BASE}/api/diagnose`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        problem: problem,
+                        commands: commands
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showResult(data);
+                } else {
+                    showError(data.error || 'Analysis failed');
+                }
+            } catch (error) {
+                showError(`Connection error: ${error.message}. Make sure the backend is running on port 5000.`);
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('diagnoseBtn').disabled = false;
+            }
+        }
+
+        function showResult(data) {
+            document.getElementById('resultContent').textContent = data.diagnosis;
+            
+            document.getElementById('stats').innerHTML = `
+                <div class="stat">
+                    <strong>OS:</strong> ${data.system_info.os}
+                </div>
+                <div class="stat">
+                    <strong>CPU:</strong> ${data.system_info.cpu_usage}%
+                </div>
+                <div class="stat">
+                    <strong>Memory:</strong> ${data.system_info.memory_usage.toFixed(1)}%
+                </div>
+                <div class="stat">
+                    <strong>Analysis tokens:</strong> ${data.token_usage.input_tokens + data.token_usage.output_tokens}
+                </div>
+            `;
+            
+            document.getElementById('result').style.display = 'block';
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('error');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+
+        // Allow Enter key to submit (Ctrl+Enter in textarea)
+        document.getElementById('problem').addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 'Enter') {
+                diagnose();
+            }
+        });
+
+        // Load system info on page load
+        loadSystemInfo();
+    </script>
+</body>
+</html>
